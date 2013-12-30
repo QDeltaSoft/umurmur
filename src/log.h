@@ -30,7 +30,7 @@
 */
 #ifndef LOG_H_2435642356
 #define LOG_H_2435642356
-
+#define DEBUG 1
 #include "types.h"
 #include "client.h"
 

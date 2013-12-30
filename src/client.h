@@ -56,6 +56,8 @@
 #define MAX_TOKENSIZE 64
 #define MAX_TOKENS 32
 
+#define NO_CRYPT 1
+
 #define IS_AUTH(_a_) ((_a_)->authenticated)
 
 typedef struct {

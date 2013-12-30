@@ -798,20 +798,26 @@ int Client_read_udp()
 	
 	while (Client_iterate(&itr) != NULL) {
 		if (itr->key == key) {
+#ifndef	NO_CRYPT
 			if (!checkDecrypt(itr, encrypted, buffer, len))
 				goto out;
+#endif
 			break;
 		}
 	}	
 	if (itr == NULL) { /* Unknown peer */
 		while (Client_iterate(&itr) != NULL) {
 			if (itr->remote_tcp.sin_addr.s_addr == from.sin_addr.s_addr) {
+#ifndef	NO_CRYPT
 				if (checkDecrypt(itr, encrypted, buffer, len)) {
+#endif
 					itr->key = key;
 					Log_info_client(itr, "New UDP connection port %d", ntohs(from.sin_port));
 					memcpy(&itr->remote_udp, &from, sizeof(struct sockaddr_in));
 					break;
+#ifndef	NO_CRYPT
 				}
+#endif
 			}
 		} /* while */
 	}
@@ -820,8 +826,12 @@ int Client_read_udp()
 	}
 	
 	itr->bUDP = true;
+#ifndef	NO_CRYPT
 	len -= 4; /* Adjust for crypt header */
 	msgType = (UDPMessageType_t)((buffer[0] >> 5) & 0x7);
+#else
+	msgType = (UDPMessageType_t)((encrypted[0] >> 5) & 0x7);
+#endif
 	switch (msgType) {
 	case UDPVoiceSpeex:
 	case UDPVoiceCELTAlpha:
@@ -829,7 +839,11 @@ int Client_read_udp()
 		if (bOpus)
 			break;
 	case UDPVoiceOpus:
+#ifndef	NO_CRYPT
 		Client_voiceMsg(itr, buffer, len);
+#else
+		Client_voiceMsg(itr, encrypted, len);
+#endif
 		break;
 	case UDPPing:
 		Log_debug("UDP Ping reply len %d", len);
@@ -995,11 +1009,13 @@ static int Client_send_udp(client_t *client, uint8_t *data, int len)
 #endif
 		if (mbuf == NULL)
 			Log_fatal("Out of memory");
-		
+#ifndef	NO_CRYPT	
 		CryptState_encrypt(&client->cryptState, data, buf, len);
 		
 		sendto(udpsock, buf, len + 4, 0, (struct sockaddr *)&client->remote_udp, sizeof(struct sockaddr_in));
-		
+#else
+		sendto(udpsock, data, len, 0, (struct sockaddr *)&client->remote_udp, sizeof(struct sockaddr_in));
+#endif
 		free(mbuf);
 	} else {
 		message_t *msg;
