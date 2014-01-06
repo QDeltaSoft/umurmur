@@ -332,6 +332,7 @@ int Client_add(int fd, struct sockaddr_in *remote)
 	memset(newclient, 0, sizeof(client_t));
 
 	newclient->tcpfd = fd;
+	newclient->key = 0;
 	memcpy(&newclient->remote_tcp, remote, sizeof(struct sockaddr_in));
 	newclient->ssl = SSLi_newconnection(&newclient->tcpfd, &newclient->SSLready);
 	if (newclient->ssl == NULL) {
@@ -807,7 +808,8 @@ int Client_read_udp()
 	}	
 	if (itr == NULL) { /* Unknown peer */
 		while (Client_iterate(&itr) != NULL) {
-			if (itr->remote_tcp.sin_addr.s_addr == from.sin_addr.s_addr) {
+			if ((itr->remote_tcp.sin_addr.s_addr == from.sin_addr.s_addr)
+			  && (itr->key == 0)) {
 #ifndef	NO_CRYPT
 				if (checkDecrypt(itr, encrypted, buffer, len)) {
 #endif
@@ -847,7 +849,11 @@ int Client_read_udp()
 		break;
 	case UDPPing:
 		Log_debug("UDP Ping reply len %d", len);
+#ifndef	NO_CRYPT
 		Client_send_udp(itr, buffer, len);
+#else
+		Client_send_udp(itr, encrypted, len);
+#endif
 		break;
 	default:
 		Log_debug("Unknown UDP message type from %s port %d", inet_ntoa(from.sin_addr), ntohs(from.sin_port));
@@ -999,7 +1005,10 @@ static int Client_send_udp(client_t *client, uint8_t *data, int len)
 {
 	uint8_t *buf, *mbuf;
 
-	if (client->remote_udp.sin_port != 0 && CryptState_isValid(&client->cryptState) &&
+	if (client->remote_udp.sin_port != 0 && 
+#ifndef NO_CRYPT
+	  CryptState_isValid(&client->cryptState) &&
+#endif
 		client->bUDP) {
 #if defined(__LP64__)
 		buf = mbuf = malloc(len + 4 + 16);
