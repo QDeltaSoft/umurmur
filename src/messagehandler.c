@@ -418,11 +418,13 @@ void Mh_handle_message(client_t *client, message_t *msg)
 	case UserState:
 		target = NULL;
 		/* Only allow state changes for for the self user unless an admin is issuing */
+		/*
 		if (msg->payload.userState->has_session &&
 		    msg->payload.userState->session != client->sessionId && !client->isAdmin) {
 			sendPermissionDenied(client, "Permission denied");
 			break;
 		}
+		*/
 		if (msg->payload.userState->has_session && msg->payload.userState->session != client->sessionId) {
 			while (Client_iterate(&target) != NULL) {
 				if (target->sessionId == msg->payload.userState->session)
@@ -450,6 +452,7 @@ void Mh_handle_message(client_t *client, message_t *msg)
 
 		if (msg->payload.userState->has_deaf) {
 			target->deaf = msg->payload.userState->deaf;
+			target->self_deaf = msg->payload.userState->deaf;
 			if (target->deaf) {
 				msg->payload.userState->has_mute = true;
 				msg->payload.userState->mute = true;
@@ -457,6 +460,7 @@ void Mh_handle_message(client_t *client, message_t *msg)
 		}
 		if (msg->payload.userState->has_mute) {
 			target->mute = msg->payload.userState->mute;
+			target->self_mute = msg->payload.userState->mute;
 			if (!target->mute) {
 				msg->payload.userState->has_deaf = true;
 				msg->payload.userState->deaf = false;
