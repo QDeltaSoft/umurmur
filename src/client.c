@@ -841,6 +841,7 @@ int Client_read_udp()
 		if (bOpus)
 			break;
 	case UDPVoiceOpus:
+	case UDPVoiceCodec2:
 #ifndef	NO_CRYPT
 		Client_voiceMsg(itr, buffer, len);
 #else

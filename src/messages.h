@@ -99,6 +99,7 @@ typedef enum {
 	UDPVoiceSpeex,
 	UDPVoiceCELTBeta,
 	UDPVoiceOpus,
+	UDPVoiceCodec2,
 } UDPMessageType_t;
 
 

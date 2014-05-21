@@ -46,7 +46,7 @@
 #define MAX_USERNAME 128
 
 #define NO_CELT_MESSAGE "<strong>WARNING:</strong> Your client doesn't support the CELT codec, you won't be able to talk to or hear most clients. Please make sure your client was built with CELT support."
-
+#define NO_UI 1
 
 extern channel_t *defaultChan;
 extern int iCodecAlpha, iCodecBeta;
@@ -249,7 +249,7 @@ void Mh_handle_message(client_t *client, message_t *msg)
 		if (!bOpus && client->bOpus && fake_celt_support) {
 			Client_textmessage(client, NO_CELT_MESSAGE);
 		}
-
+#ifndef NO_UI
 		/* Iterate channels and send channel info */
 		ch_itr = NULL;
 		while (Chan_iterate(&ch_itr) != NULL) {
@@ -294,7 +294,7 @@ void Mh_handle_message(client_t *client, message_t *msg)
 				Client_send_message(client, sendmsg);
 			}
 		}
-		
+#endif		
 		/* Send user state for connecting user to other users */
 		sendmsg = Msg_create(UserState);
 		sendmsg->payload.userState->has_session = true;
@@ -452,7 +452,7 @@ void Mh_handle_message(client_t *client, message_t *msg)
 
 		if (msg->payload.userState->has_deaf) {
 			target->deaf = msg->payload.userState->deaf;
-			target->self_deaf = msg->payload.userState->deaf;
+			
 			if (target->deaf) {
 				msg->payload.userState->has_mute = true;
 				msg->payload.userState->mute = true;
@@ -460,7 +460,7 @@ void Mh_handle_message(client_t *client, message_t *msg)
 		}
 		if (msg->payload.userState->has_mute) {
 			target->mute = msg->payload.userState->mute;
-			target->self_mute = msg->payload.userState->mute;
+			
 			if (!target->mute) {
 				msg->payload.userState->has_deaf = true;
 				msg->payload.userState->deaf = false;
@@ -468,18 +468,18 @@ void Mh_handle_message(client_t *client, message_t *msg)
 			}
 		}
 		if (msg->payload.userState->has_self_deaf) {
-			client->self_deaf = msg->payload.userState->self_deaf;
-			if (client->self_deaf) {
+			target->self_deaf = msg->payload.userState->self_deaf;
+			if (target->self_deaf) {
 				msg->payload.userState->has_self_mute = true;
 				msg->payload.userState->self_mute = true;
 			}
 		}
 		if (msg->payload.userState->has_self_mute) {
-			client->self_mute = msg->payload.userState->self_mute;
-			if (!client->self_mute) {
+			target->self_mute = msg->payload.userState->self_mute;
+			if (!target->self_mute) {
 				msg->payload.userState->has_self_deaf = true;
 				msg->payload.userState->self_deaf = false;
-				client->self_deaf = false;
+				target->self_deaf = false;
 			}
 		}
 		if (msg->payload.userState->has_recording &&
@@ -715,7 +715,28 @@ void Mh_handle_message(client_t *client, message_t *msg)
 		ch_itr = NULL;
 		while (Chan_iterate_siblings(parent, &ch_itr) != NULL) {
 			if (strcmp(ch_itr->name, msg->payload.channelState->name) == 0) {
+#ifdef NO_UI
+				msg->payload.channelState->has_channel_id = true;
+				msg->payload.channelState->channel_id = ch_itr->id;
+				msg->payload.channelState->name = ch_itr->name;
+				Msg_inc_ref(msg);
+				Client_send_message_except(NULL, msg);
+				sendmsg = Msg_create(UserState);
+				sendmsg->payload.userState->has_session = true;
+				sendmsg->payload.userState->session = client->sessionId;
+				sendmsg->payload.userState->has_channel_id = true;
+				sendmsg->payload.userState->channel_id = ch_itr->id;
+				Client_send_message_except(NULL, sendmsg);
+				leave_id = Chan_userJoin(ch_itr, client);
+				if (leave_id > 0) {
+					Log_debug("Removing channel ID %d", leave_id);
+					sendmsg = Msg_create(ChannelRemove);
+					sendmsg->payload.channelRemove->channel_id = leave_id;
+					Client_send_message_except(NULL, sendmsg);
+				}
+#else
 				sendPermissionDenied(client, "Channel already exists");
+#endif
 				break;
 			}
 		}
