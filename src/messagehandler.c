@@ -46,7 +46,7 @@
 #define MAX_USERNAME 128
 
 #define NO_CELT_MESSAGE "<strong>WARNING:</strong> Your client doesn't support the CELT codec, you won't be able to talk to or hear most clients. Please make sure your client was built with CELT support."
-#define NO_UI 1
+//#define NO_UI 1
 
 extern channel_t *defaultChan;
 extern int iCodecAlpha, iCodecBeta;

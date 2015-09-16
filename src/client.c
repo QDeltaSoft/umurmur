@@ -768,7 +768,7 @@ int Client_read_udp()
 	uint8_t encrypted[UDP_PACKET_SIZE];
 #endif
 	uint8_t buffer[UDP_PACKET_SIZE];
-	
+
 	len = recvfrom(udpsock, encrypted, UDP_PACKET_SIZE, MSG_TRUNC, (struct sockaddr *)&from, &fromlen);
 	if (len == 0) {
 		return -1;
@@ -891,13 +891,26 @@ int Client_voiceMsg(client_t *client, uint8_t *data, int len)
 	
 	channel_t *ch = (channel_t *)client->channel;
 	struct dlist *itr;
+	if (!client->authenticated)
+		Log_debug("Client not authenticated");
+	if (client->mute)
+		Log_debug("Client muted");
+	if (client->self_mute)
+		Log_debug("Client self muted");
+	if (ch->silent)
+		Log_debug("Channel silent");
 	
 	if (!client->authenticated || client->mute || client->self_mute || ch->silent)
+	{
 		goto out;
+	}
 	
 	packetsize = 20 + 8 + 4 + len;
 	if (client->availableBandwidth - packetsize < 0)
+	{
+		Log_debug("Bandwidth issue");
 		goto out; /* Discard */
+	}
 	client->availableBandwidth -= packetsize;
 	
 	Timer_restart(&client->idleTime);
@@ -927,7 +940,10 @@ int Client_voiceMsg(client_t *client, uint8_t *data, int len)
 		buffer[0] = (uint8_t) type;
 		
 		if (ch == NULL)
+		{
+			Log_debug("NUll ch");
 			goto out;
+		}
 		
 		list_iterate(itr, &ch->clients) {
 			client_t *c;

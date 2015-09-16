@@ -44,7 +44,7 @@ AC_PROG_CC
 
 # Checks dependencies.
 AC_CHECK_HEADERS([google/protobuf-c/protobuf-c.h], [], [AC_MSG_ERROR([could not find google/protobuf-c/protobuf-c.h])])
-AC_CHECK_LIB([protobuf-c], [protobuf_c_data_buffer_init], [], [AC_MSG_ERROR([could not find protobuf-c library])])
+AC_CHECK_LIB([protobuf-c], [protobuf_c_message_init], [], [AC_MSG_ERROR([could not find protobuf-c library])])
 AC_CHECK_HEADERS([libconfig.h], [], [AC_MSG_ERROR([could not find libconfig.h])])
 AC_CHECK_LIB([config], [config_init], [], [AC_MSG_ERROR([could not find libconfig])])
 AS_IF([test "x$with_ssl" = xpolarssl], [
